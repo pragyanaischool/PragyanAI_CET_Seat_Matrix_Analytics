@@ -1,15 +1,7 @@
-# ui/dashboard.py
-
-# ui/dashboard.py
-
-
 """
 ui/dashboard.py
 
-Executive Dashboard
-Smart CET AI Counsellor
-
-Author : PragyanAI
+Main Dashboard
 """
 
 import streamlit as st
@@ -17,299 +9,417 @@ import pandas as pd
 
 from ui.charts import (
     district_distribution_chart,
-    college_type_chart,
     top_colleges_chart,
-    top_branches_chart
+    top_branches_chart,
+    yearly_growth_chart
 )
 
 
-# ==================================================
-# HEADER
-# ==================================================
+# =====================================================
+# SAFE HELPERS
+# =====================================================
 
-def render_header():
+def get_colleges_count(df):
 
-    st.title(
-        "🎓 Smart CET AI Counsellor"
+    if "college_name" not in df.columns:
+        return 0
+
+    return df["college_name"].nunique()
+
+
+def get_branches_count(df):
+
+    if "course_name" not in df.columns:
+        return 0
+
+    return df["course_name"].nunique()
+
+
+def get_district_count(df):
+
+    if "district" not in df.columns:
+        return 0
+
+    return df["district"].nunique()
+
+
+def get_total_seats(df):
+
+    if "total_intake" not in df.columns:
+        return 0
+
+    return int(
+        pd.to_numeric(
+            df["total_intake"],
+            errors="coerce"
+        ).fillna(0).sum()
     )
 
-    st.markdown(
-        """
-        Karnataka College Intelligence Platform
-        """
-    )
 
-
-# ==================================================
-# KPI CARDS
-# ==================================================
+# =====================================================
+# KPI SECTION
+# =====================================================
 
 def render_kpis(df):
 
-    total_colleges = (
-        df["college_name"].nunique()
-    )
-
-    total_seats = (
-        int(df["total_intake"].sum())
-    )
-
-    total_branches = (
-        df["course_name"].nunique()
-    )
-
-    total_districts = (
-        df["district"].nunique()
-    )
-
-    c1,c2,c3,c4 = st.columns(4)
-
-    with c1:
-        st.metric(
-            "🏫 Colleges",
-            total_colleges
-        )
-
-    with c2:
-        st.metric(
-            "🎓 Seats",
-            f"{total_seats:,}"
-        )
-
-    with c3:
-        st.metric(
-            "📚 Branches",
-            total_branches
-        )
-
-    with c4:
-        st.metric(
-            "🗺 Districts",
-            total_districts
-        )
-
-
-# ==================================================
-# QUICK SEARCH
-# ==================================================
-
-def quick_search(df):
-
-    st.subheader(
-        "🔍 Quick College Search"
-    )
-
-    colleges = sorted(
-        df["college_name"]
-        .dropna()
-        .unique()
-    )
-
-    selected = st.selectbox(
-        "Search College",
-        colleges
-    )
-
-    if selected:
-
-        college_df = df[
-            df["college_name"] == selected
-        ]
-
-        st.dataframe(
-            college_df,
-            use_container_width=True
-        )
-
-
-# ==================================================
-# TOP COLLEGES
-# ==================================================
-
-def top_colleges_section(df):
-
-    st.subheader(
-        "🏆 Top Colleges"
-    )
-
-    top_colleges_chart(df)
-
-
-# ==================================================
-# TOP BRANCHES
-# ==================================================
-
-def top_branches_section(df):
-
-    st.subheader(
-        "📚 Top Branches"
-    )
-
-    top_branches_chart(df)
-
-
-# ==================================================
-# ANALYTICS SECTION
-# ==================================================
-
-def analytics_section(df):
-
-    col1,col2 = st.columns(2)
+    col1, col2, col3, col4 = st.columns(4)
 
     with col1:
 
-        district_distribution_chart(df)
+        st.metric(
+            "🏫 Colleges",
+            get_colleges_count(df)
+        )
 
     with col2:
 
-        college_type_chart(df)
+        st.metric(
+            "📚 Branches",
+            get_branches_count(df)
+        )
+
+    with col3:
+
+        st.metric(
+            "🗺 Districts",
+            get_district_count(df)
+        )
+
+    with col4:
+
+        st.metric(
+            "🎓 Total Seats",
+            f"{get_total_seats(df):,}"
+        )
 
 
-# ==================================================
-# AI INSIGHTS
-# ==================================================
+# =====================================================
+# DATA QUALITY
+# =====================================================
 
-def ai_insights(df):
+def render_data_summary(df):
 
     st.subheader(
-        "🧠 AI Insights"
+        "📋 Dataset Summary"
     )
 
-    try:
+    c1, c2 = st.columns(2)
 
-        top_college = (
-            df.groupby("college_name")
-            ["total_intake"]
-            .sum()
-            .idxmax()
+    with c1:
+
+        st.write(
+            "Rows:",
+            len(df)
         )
 
-        top_branch = (
-            df.groupby("course_name")
-            ["total_intake"]
-            .sum()
-            .idxmax()
+        st.write(
+            "Columns:",
+            len(df.columns)
         )
 
-        top_district = (
-            df.groupby("district")
-            ["total_intake"]
-            .sum()
-            .idxmax()
+    with c2:
+
+        st.write(
+            "Available Fields:"
         )
 
-        st.success(
-            f"🏫 Highest Intake College: {top_college}"
-        )
-
-        st.success(
-            f"📚 Most Popular Branch: {top_branch}"
-        )
-
-        st.success(
-            f"🗺 Highest Intake District: {top_district}"
-        )
-
-    except:
-        st.warning(
-            "Not enough data."
+        st.code(
+            ", ".join(
+                df.columns.tolist()
+            )
         )
 
 
-# ==================================================
-# RECENT UPLOADS
-# ==================================================
+# =====================================================
+# CHARTS
+# =====================================================
 
-def recent_uploads():
+def render_charts(df):
 
     st.subheader(
-        "📂 Uploaded Seat Matrices"
+        "📊 Visual Analytics"
     )
 
-    if "uploaded_files" in st.session_state:
+    tab1, tab2, tab3, tab4 = st.tabs(
 
-        for file in st.session_state[
-            "uploaded_files"
-        ]:
+        [
 
-            st.info(file.name)
+            "Districts",
 
-    else:
+            "Branches",
 
-        st.info(
-            "No files uploaded yet."
-        )
+            "Colleges",
+
+            "Growth"
+        ]
+    )
+
+    # -----------------------------------------
+
+    with tab1:
+
+        if (
+            "district" in df.columns
+            and
+            "total_intake"
+            in df.columns
+        ):
+
+            fig = (
+                district_distribution_chart(
+                    df
+                )
+            )
+
+            if fig:
+
+                st.plotly_chart(
+
+                    fig,
+
+                    use_container_width=True
+                )
+
+        else:
+
+            st.info(
+                "District data unavailable."
+            )
+
+    # -----------------------------------------
+
+    with tab2:
+
+        if (
+            "course_name"
+            in df.columns
+            and
+            "total_intake"
+            in df.columns
+        ):
+
+            fig = (
+                top_branches_chart(
+                    df
+                )
+            )
+
+            if fig:
+
+                st.plotly_chart(
+
+                    fig,
+
+                    use_container_width=True
+                )
+
+        else:
+
+            st.info(
+                "Branch data unavailable."
+            )
+
+    # -----------------------------------------
+
+    with tab3:
+
+        if (
+            "college_name"
+            in df.columns
+            and
+            "total_intake"
+            in df.columns
+        ):
+
+            fig = (
+                top_colleges_chart(
+                    df
+                )
+            )
+
+            if fig:
+
+                st.plotly_chart(
+
+                    fig,
+
+                    use_container_width=True
+                )
+
+        else:
+
+            st.info(
+                "College data unavailable."
+            )
+
+    # -----------------------------------------
+
+    with tab4:
+
+        if (
+            "year"
+            in df.columns
+            and
+            "total_intake"
+            in df.columns
+        ):
+
+            fig = (
+                yearly_growth_chart(
+                    df
+                )
+            )
+
+            if fig:
+
+                st.plotly_chart(
+
+                    fig,
+
+                    use_container_width=True
+                )
+
+        else:
+
+            st.info(
+                "Year-wise data unavailable."
+            )
 
 
-# ==================================================
-# MAIN DASHBOARD
-# ==================================================
+# =====================================================
+# TOP TABLES
+# =====================================================
+
+def render_top_tables(df):
+
+    st.subheader(
+        "🏆 Top Insights"
+    )
+
+    col1, col2 = st.columns(2)
+
+    # -------------------------------------
+
+    with col1:
+
+        if (
+            "college_name"
+            in df.columns
+            and
+            "total_intake"
+            in df.columns
+        ):
+
+            top_colleges = (
+
+                df.groupby(
+                    "college_name"
+                )["total_intake"]
+
+                .sum()
+
+                .reset_index()
+
+                .sort_values(
+                    "total_intake",
+                    ascending=False
+                )
+
+                .head(10)
+            )
+
+            st.write(
+                "Top Colleges"
+            )
+
+            st.dataframe(
+                top_colleges,
+                use_container_width=True
+            )
+
+    # -------------------------------------
+
+    with col2:
+
+        if (
+            "course_name"
+            in df.columns
+            and
+            "total_intake"
+            in df.columns
+        ):
+
+            top_branches = (
+
+                df.groupby(
+                    "course_name"
+                )["total_intake"]
+
+                .sum()
+
+                .reset_index()
+
+                .sort_values(
+                    "total_intake",
+                    ascending=False
+                )
+
+                .head(10)
+            )
+
+            st.write(
+                "Top Branches"
+            )
+
+            st.dataframe(
+                top_branches,
+                use_container_width=True
+            )
+
+
+# =====================================================
+# MAIN PAGE
+# =====================================================
 
 def render_dashboard(df):
 
-    render_header()
+    st.title(
+        "🎓 CET Seat Matrix Dashboard"
+    )
+
+    if df is None or df.empty:
+
+        st.warning(
+            """
+            Upload a Seat Matrix
+            PDF/CSV/Excel file.
+            """
+        )
+
+        return
 
     render_kpis(df)
 
     st.divider()
 
-    analytics_section(df)
+    render_data_summary(df)
 
     st.divider()
 
-    col1,col2 = st.columns(2)
-
-    with col1:
-        top_colleges_section(df)
-
-    with col2:
-        top_branches_section(df)
+    render_charts(df)
 
     st.divider()
 
-    quick_search(df)
+    render_top_tables(df)
 
     st.divider()
 
-    ai_insights(df)
+    with st.expander(
+        "View Raw Data"
+    ):
 
-    st.divider()
-
-    recent_uploads()
-
-
-# ==================================================
-# TEST
-# ==================================================
-
-if __name__ == "__main__":
-
-    sample_df = pd.DataFrame({
-
-        "college_name":[
-            "BMSCE",
-            "RVCE",
-            "PES"
-        ],
-
-        "district":[
-            "Bangalore",
-            "Bangalore",
-            "Mysore"
-        ],
-
-        "course_name":[
-            "CSE",
-            "ISE",
-            "ECE"
-        ],
-
-        "total_intake":[
-            1200,
-            1500,
-            1300
-        ]
-    })
-
-    render_dashboard(sample_df)
-
+        st.dataframe(
+            df,
+            use_container_width=True
+        )
+        
