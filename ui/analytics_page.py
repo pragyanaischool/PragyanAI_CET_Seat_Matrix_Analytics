@@ -25,9 +25,9 @@ from analytics.seat_growth_analysis import (
 
 from ui.charts import (
     plot_bar_chart,
-    plot_line_chart
+    plot_line_chart,
+    plot_pie_chart
 )
-
 
 def render_analytics(df):
     """
