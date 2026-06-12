@@ -1,26 +1,21 @@
 """
 ui/styles.py
 
-PragyanAI CET Analytics
-Professional Streamlit Theme
+PragyanAI CET Seat Matrix Analytics
 """
 
 import streamlit as st
 
 def initialize_theme():
-"""Apply custom styling"""
+"""Apply custom application styling"""
 
-
+```
 st.markdown(
     """
     <style>
 
-    /* =========================
-       Main App
-    ========================== */
-
     .stApp {
-        background-color: #f8fafc;
+        background-color: #F8FAFC;
     }
 
     .block-container {
@@ -29,29 +24,13 @@ st.markdown(
         max-width: 1400px;
     }
 
-    /* =========================
-       Sidebar
-    ========================== */
-
-    section[data-testid="stSidebar"] {
-        background-color: #0f172a;
-    }
-
-    section[data-testid="stSidebar"] * {
-        color: white !important;
-    }
-
-    /* =========================
-       Headers
-    ========================== */
-
     h1 {
-        color: #1e3a8a;
+        color: #1E3A8A;
         font-weight: 700;
     }
 
     h2 {
-        color: #2563eb;
+        color: #2563EB;
         font-weight: 600;
     }
 
@@ -59,54 +38,31 @@ st.markdown(
         color: #334155;
     }
 
-    /* =========================
-       Metrics
-    ========================== */
-
-    div[data-testid="metric-container"] {
-        background: white;
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 15px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    section[data-testid="stSidebar"] {
+        background-color: #0F172A;
     }
 
-    /* =========================
-       Buttons
-    ========================== */
+    section[data-testid="stSidebar"] * {
+        color: white;
+    }
+
+    div[data-testid="metric-container"] {
+        background-color: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 12px;
+        padding: 12px;
+    }
 
     .stButton > button {
-        background-color: #2563eb;
+        background-color: #2563EB;
         color: white;
         border-radius: 8px;
         border: none;
-        font-weight: 600;
     }
 
     .stButton > button:hover {
-        background-color: #1d4ed8;
-        color: white;
+        background-color: #1D4ED8;
     }
-
-    /* =========================
-       Tables
-    ========================== */
-
-    .stDataFrame {
-        border-radius: 10px;
-    }
-
-    /* =========================
-       Chat
-    ========================== */
-
-    .stChatMessage {
-        border-radius: 10px;
-    }
-
-    /* =========================
-       Hide Streamlit Footer
-    ========================== */
 
     footer {
         visibility: hidden;
@@ -116,3 +72,5 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+```
+
