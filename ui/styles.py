@@ -1,72 +1,66 @@
 """
 ui/styles.py
+
+Minimal Professional Theme
 """
 
 import streamlit as st
 
-
 def initialize_theme():
-    st.markdown(
-        """
-        <style>
+"""
+Apply minimal styling.
+Streamlit theme controls colors.
+"""
 
-        .stApp {
-            background-color: #F8FAFC;
-        }
 
-        .block-container {
-            padding-top: 1rem;
-            padding-bottom: 2rem;
-            max-width: 1400px;
-        }
+st.markdown(
+    """
+    <style>
 
-        h1 {
-            color: #1E3A8A;
-            font-weight: 700;
-        }
+    /* Main Container */
 
-        h2 {
-            color: #2563EB;
-            font-weight: 600;
-        }
+    .block-container {
+        max-width: 1400px;
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
 
-        h3 {
-            color: #334155;
-        }
+    /* Metric Cards */
 
-        section[data-testid="stSidebar"] {
-            background-color: #0F172A;
-        }
+    div[data-testid="metric-container"] {
+        border-radius: 12px;
+        padding: 12px;
+        border: 1px solid rgba(128,128,128,0.15);
+    }
 
-        section[data-testid="stSidebar"] * {
-            color: white !important;
-        }
+    /* Buttons */
 
-        div[data-testid="metric-container"] {
-            background-color: white;
-            border: 1px solid #E2E8F0;
-            border-radius: 12px;
-            padding: 12px;
-        }
+    .stButton > button {
+        border-radius: 8px;
+    }
 
-        .stButton > button {
-            background-color: #2563EB;
-            color: white;
-            border-radius: 8px;
-            border: none;
-        }
+    /* Dataframes */
 
-        .stButton > button:hover {
-            background-color: #1D4ED8;
-        }
+    .stDataFrame {
+        border-radius: 10px;
+    }
 
-        footer {
-            visibility: hidden;
-        }
+    /* Chat Messages */
 
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
+    .stChatMessage {
+        border-radius: 10px;
+    }
+
+    /* Hide Footer */
+
+    footer {
+        visibility: hidden;
+    }
+
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
     
 
