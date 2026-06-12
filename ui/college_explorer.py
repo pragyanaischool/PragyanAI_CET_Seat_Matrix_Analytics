@@ -1,6 +1,5 @@
 # ui/college_explorer.py
 
-```python
 """
 ui/college_explorer.py
 
@@ -625,4 +624,3 @@ if __name__ == "__main__":
     })
 
     render_college_explorer(sample)
-```
