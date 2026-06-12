@@ -1,527 +1,360 @@
-# ui/analytics_page.py
-
 """
 ui/analytics_page.py
 
-Advanced Analytics Page
-Smart CET AI Counsellor
-
-Features
---------
-✓ District Analytics
-✓ Branch Analytics
-✓ College Analytics
-✓ Year-wise Analytics
-✓ HK/RK Analytics
-✓ AI/ML Analytics
-✓ Seat Growth Analytics
-✓ Top Colleges
-✓ Top Branches
-✓ Heatmaps
-✓ Download Reports
-
-Author : PragyanAI
+Analytics Page
 """
 
 import streamlit as st
 import pandas as pd
 
+from analytics.district_analysis import (
+    DistrictAnalysis
+)
+
+from analytics.branch_analysis import (
+    BranchAnalysis
+)
+
+from analytics.intake_analysis import (
+    IntakeAnalysis
+)
+
+from analytics.seat_growth_analysis import (
+    SeatGrowthAnalysis
+)
+
 from ui.charts import (
-    district_distribution_chart,
-    district_college_count_chart,
-    top_districts_chart,
-
-    branch_distribution_chart,
-    top_branches_chart,
-    course_popularity_chart,
-
-    top_colleges_chart,
-    branch_count_per_college,
-
-    growth_chart,
-    college_growth_chart,
-
-    hk_analysis_chart,
-    rk_analysis_chart,
-
-    aiml_college_chart,
-    seat_heatmap
+    plot_bar_chart,
+    plot_line_chart
 )
 
 
-# ==========================================================
-# PAGE HEADER
-# ==========================================================
-
-def analytics_header():
+def render_analytics(df):
+    """
+    Analytics Page
+    """
 
     st.title(
-        "📈 Advanced Analytics Dashboard"
+        "📊 CET Analytics"
     )
 
-    st.markdown(
-        """
-        Analyze colleges, districts,
-        branches, seat growth trends,
-        AI/ML expansion and more.
-        """
-    )
-
-
-# ==========================================================
-# KPI SECTION
-# ==========================================================
-
-def render_kpis(df):
-
-    total_colleges = (
-        df["college_name"].nunique()
-        if "college_name" in df.columns
-        else 0
-    )
-
-    total_seats = (
-        int(df["total_intake"].sum())
-        if "total_intake" in df.columns
-        else 0
-    )
-
-    total_branches = (
-        df["course_name"].nunique()
-        if "course_name" in df.columns
-        else 0
-    )
-
-    total_districts = (
-        df["district"].nunique()
-        if "district" in df.columns
-        else 0
-    )
-
-    c1, c2, c3, c4 = st.columns(4)
-
-    with c1:
-        st.metric(
-            "🏫 Colleges",
-            total_colleges
-        )
-
-    with c2:
-        st.metric(
-            "🎓 Seats",
-            f"{total_seats:,}"
-        )
-
-    with c3:
-        st.metric(
-            "📚 Branches",
-            total_branches
-        )
-
-    with c4:
-        st.metric(
-            "🗺 Districts",
-            total_districts
-        )
-
-
-# ==========================================================
-# DISTRICT TAB
-# ==========================================================
-
-def district_tab(df):
-
-    st.subheader(
-        "🗺 District Analytics"
-    )
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        district_distribution_chart(df)
-
-    with col2:
-        district_college_count_chart(df)
-
-    st.divider()
-
-    top_districts_chart(df)
-
-
-# ==========================================================
-# BRANCH TAB
-# ==========================================================
-
-def branch_tab(df):
-
-    st.subheader(
-        "📚 Branch Analytics"
-    )
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        branch_distribution_chart(df)
-
-    with col2:
-        course_popularity_chart(df)
-
-    st.divider()
-
-    top_branches_chart(df)
-
-
-# ==========================================================
-# COLLEGE TAB
-# ==========================================================
-
-def college_tab(df):
-
-    st.subheader(
-        "🏫 College Analytics"
-    )
-
-    top_colleges_chart(df)
-
-    st.divider()
-
-    branch_count_per_college(df)
-
-    st.divider()
-
-    if "college_name" in df.columns:
-
-        colleges = sorted(
-            df["college_name"]
-            .dropna()
-            .unique()
-        )
-
-        selected_college = st.selectbox(
-            "Select College",
-            colleges
-        )
-
-        if selected_college:
-
-            college_growth_chart(
-                df,
-                selected_college
-            )
-
-
-# ==========================================================
-# YEAR TAB
-# ==========================================================
-
-def year_tab(df):
-
-    st.subheader(
-        "📈 Year Wise Growth"
-    )
-
-    if "year" not in df.columns:
+    if df is None or df.empty:
 
         st.warning(
-            "Year data not found."
+            "No data available."
         )
 
         return
 
-    growth_chart(df)
+    # =====================================
+    # ANALYTICS OBJECTS
+    # =====================================
 
-    st.divider()
-
-    growth_table = (
-        df.groupby("year")
-        ["total_intake"]
-        .sum()
-        .reset_index()
+    district_analysis = (
+        DistrictAnalysis(df)
     )
 
-    st.dataframe(
-        growth_table,
-        use_container_width=True
+    branch_analysis = (
+        BranchAnalysis(df)
     )
 
-
-# ==========================================================
-# HK RK TAB
-# ==========================================================
-
-def hk_rk_tab(df):
-
-    st.subheader(
-        "🌍 HK / RK Analytics"
+    intake_analysis = (
+        IntakeAnalysis(df)
     )
 
-    col1, col2 = st.columns(2)
-
-    with col1:
-
-        if "hk_seats" in df.columns:
-            hk_analysis_chart(df)
-        else:
-            st.info(
-                "HK data unavailable"
-            )
-
-    with col2:
-
-        if "rk_seats" in df.columns:
-            rk_analysis_chart(df)
-        else:
-            st.info(
-                "RK data unavailable"
-            )
-
-
-# ==========================================================
-# AI ML TAB
-# ==========================================================
-
-def ai_ml_tab(df):
-
-    st.subheader(
-        "🤖 AI / ML Analytics"
+    growth_analysis = (
+        SeatGrowthAnalysis(df)
     )
 
-    aiml_college_chart(df)
+    # =====================================
+    # TABS
+    # =====================================
 
-    st.divider()
+    tab1, tab2, tab3, tab4 = st.tabs(
 
-    ai_df = df[
-        df["course_name"]
-        .str.contains(
-            "ARTIFICIAL",
-            case=False,
-            na=False
-        )
-    ]
-
-    st.dataframe(
-        ai_df,
-        use_container_width=True
-    )
-
-
-# ==========================================================
-# HEATMAP TAB
-# ==========================================================
-
-def heatmap_tab(df):
-
-    st.subheader(
-        "🔥 College vs Branch Heatmap"
-    )
-
-    seat_heatmap(df)
-
-
-# ==========================================================
-# INSIGHTS PANEL
-# ==========================================================
-
-def analytics_insights(df):
-
-    st.subheader(
-        "🧠 AI Generated Insights"
-    )
-
-    try:
-
-        top_college = (
-            df.groupby("college_name")
-            ["total_intake"]
-            .sum()
-            .idxmax()
-        )
-
-        top_branch = (
-            df.groupby("course_name")
-            ["total_intake"]
-            .sum()
-            .idxmax()
-        )
-
-        top_district = (
-            df.groupby("district")
-            ["total_intake"]
-            .sum()
-            .idxmax()
-        )
-
-        st.success(
-            f"""
-            Top College:
-            {top_college}
-            """
-        )
-
-        st.success(
-            f"""
-            Most Popular Branch:
-            {top_branch}
-            """
-        )
-
-        st.success(
-            f"""
-            Highest Intake District:
-            {top_district}
-            """
-        )
-
-    except:
-        pass
-
-
-# ==========================================================
-# DOWNLOAD SECTION
-# ==========================================================
-
-def download_section(df):
-
-    st.subheader(
-        "📥 Export Analytics"
-    )
-
-    csv = df.to_csv(
-        index=False
-    ).encode("utf-8")
-
-    st.download_button(
-        label="Download CSV",
-        data=csv,
-        file_name="analytics.csv",
-        mime="text/csv"
-    )
-
-
-# ==========================================================
-# MAIN PAGE
-# ==========================================================
-
-def render_analytics(df):
-
-    analytics_header()
-
-    render_kpis(df)
-
-    st.divider()
-
-    analytics_insights(df)
-
-    st.divider()
-
-    (
-        tab1,
-        tab2,
-        tab3,
-        tab4,
-        tab5,
-        tab6,
-        tab7
-    ) = st.tabs(
         [
-            "District",
-            "Branch",
-            "College",
-            "Year",
-            "HK/RK",
-            "AI/ML",
-            "Heatmap"
+
+            "District Analysis",
+
+            "Branch Analysis",
+
+            "College Intake",
+
+            "Growth Analysis"
         ]
     )
+
+    # =====================================
+    # DISTRICT ANALYSIS
+    # =====================================
 
     with tab1:
-        district_tab(df)
+
+        st.subheader(
+            "District Wise Seats"
+        )
+
+        district_df = (
+            district_analysis
+            .district_wise_seats()
+        )
+
+        st.dataframe(
+            district_df,
+            use_container_width=True
+        )
+
+        if not district_df.empty:
+
+            try:
+
+                fig = plot_bar_chart(
+
+                    district_df,
+
+                    x="district",
+
+                    y="total_intake",
+
+                    title="District Wise Seats"
+                )
+
+                st.plotly_chart(
+                    fig,
+                    use_container_width=True
+                )
+
+            except Exception:
+
+                pass
+
+        st.subheader(
+            "District Wise Colleges"
+        )
+
+        district_colleges = (
+            district_analysis
+            .district_wise_colleges()
+        )
+
+        st.dataframe(
+            district_colleges,
+            use_container_width=True
+        )
+
+    # =====================================
+    # BRANCH ANALYSIS
+    # =====================================
 
     with tab2:
-        branch_tab(df)
+
+        st.subheader(
+            "Top Branches"
+        )
+
+        branch_df = (
+            branch_analysis
+            .top_branches()
+        )
+
+        st.dataframe(
+            branch_df,
+            use_container_width=True
+        )
+
+        if not branch_df.empty:
+
+            try:
+
+                fig = plot_bar_chart(
+
+                    branch_df.head(15),
+
+                    x="course_name",
+
+                    y="total_intake",
+
+                    title="Top Branches"
+                )
+
+                st.plotly_chart(
+                    fig,
+                    use_container_width=True
+                )
+
+            except Exception:
+
+                pass
+
+        st.subheader(
+            "Branch College Count"
+        )
+
+        college_count_df = (
+            branch_analysis
+            .branch_college_count()
+        )
+
+        st.dataframe(
+            college_count_df,
+            use_container_width=True
+        )
+
+    # =====================================
+    # INTAKE ANALYSIS
+    # =====================================
 
     with tab3:
-        college_tab(df)
+
+        st.subheader(
+            "Top Colleges by Intake"
+        )
+
+        intake_df = (
+            intake_analysis
+            .top_colleges_by_intake()
+        )
+
+        st.dataframe(
+            intake_df,
+            use_container_width=True
+        )
+
+        if not intake_df.empty:
+
+            try:
+
+                fig = plot_bar_chart(
+
+                    intake_df.head(20),
+
+                    x="college_name",
+
+                    y="total_intake",
+
+                    title="Top Colleges by Intake"
+                )
+
+                st.plotly_chart(
+                    fig,
+                    use_container_width=True
+                )
+
+            except Exception:
+
+                pass
+
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+
+            st.metric(
+
+                "Average Intake",
+
+                round(
+                    intake_analysis
+                    .average_intake(),
+                    2
+                )
+            )
+
+        with col2:
+
+            st.metric(
+
+                "Maximum Intake",
+
+                intake_analysis
+                .max_intake()
+            )
+
+        with col3:
+
+            st.metric(
+
+                "Minimum Intake",
+
+                intake_analysis
+                .min_intake()
+            )
+
+    # =====================================
+    # GROWTH ANALYSIS
+    # =====================================
 
     with tab4:
-        year_tab(df)
 
-    with tab5:
-        hk_rk_tab(df)
+        if "year" not in df.columns:
 
-    with tab6:
-        ai_ml_tab(df)
+            st.info(
+                "Year column not found."
+            )
 
-    with tab7:
-        heatmap_tab(df)
+        else:
 
-    st.divider()
+            st.subheader(
+                "Seat Growth Analysis"
+            )
 
-    download_section(df)
+            growth_df = (
+                growth_analysis
+                .overall_growth()
+            )
 
+            st.dataframe(
+                growth_df,
+                use_container_width=True
+            )
 
-# ==========================================================
-# TEST
-# ==========================================================
+            if not growth_df.empty:
 
-if __name__ == "__main__":
+                try:
 
-    st.set_page_config(
-        page_title="Analytics",
-        layout="wide"
-    )
+                    fig = plot_line_chart(
 
-    sample_df = pd.DataFrame({
+                        growth_df,
 
-        "college_name":[
-            "BMSCE",
-            "RVCE",
-            "PES"
-        ],
+                        x="year",
 
-        "district":[
-            "Bangalore",
-            "Bangalore",
-            "Bangalore"
-        ],
+                        y="total_intake",
 
-        "course_name":[
-            "CSE",
-            "ISE",
-            "ARTIFICIAL INTELLIGENCE AND MACHINE LEARNING"
-        ],
+                        title="Year Wise Seat Growth"
+                    )
 
-        "college_type":[
-            "Private",
-            "Private",
-            "Private"
-        ],
+                    st.plotly_chart(
+                        fig,
+                        use_container_width=True
+                    )
 
-        "year":[
-            2023,
-            2024,
-            2025
-        ],
+                except Exception:
 
-        "total_intake":[
-            1200,
-            1500,
-            1400
-        ],
+                    pass
 
-        "hk_seats":[
-            20,
-            15,
-            10
-        ],
+            st.subheader(
+                "Highest Growth Colleges"
+            )
 
-        "rk_seats":[
-            5,
-            8,
-            7
-        ]
-    })
+            growth_colleges = (
+                growth_analysis
+                .highest_growth_colleges()
+            )
 
-    render_analytics(
-        sample_df
-    )
+            st.dataframe(
+                growth_colleges,
+                use_container_width=True
+            )
+
+    # =====================================
+    # RAW DATA
+    # =====================================
+
+    with st.expander(
+        "View Raw Data"
+    ):
+
+        st.dataframe(
+            df,
+            use_container_width=True
+        )
+        
