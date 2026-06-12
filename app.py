@@ -1,124 +1,468 @@
 """
 app.py
 
-Smart CET AI Counsellor
-
-Main Entry Point
+PragyanAI CET Seat Matrix Analytics
+Main Streamlit Application
 """
 
 import streamlit as st
 import pandas as pd
+import tempfile
+from pathlib import Path
+
+# ==========================================
+# CONFIG
+# ==========================================
+
+from config.settings import settings
+
+# ==========================================
+# UI
+# ==========================================
 
 from ui.styles import initialize_theme
+
 from ui.sidebar import render_sidebar
 
 from ui.dashboard import render_dashboard
-from ui.analytics_page import render_analytics
+
+from ui.analytics_page import (
+    render_analytics
+)
+
 from ui.college_explorer import (
     render_college_explorer
 )
+
 from ui.comparison_page import (
     render_comparison_page
 )
+
 from ui.chatbot_ui import (
     render_chatbot
 )
 
-from utils.file_utils import (
-    load_dataframe
+# ==========================================
+# EXTRACTION
+# ==========================================
+
+from extraction.pdf_parser import (
+    PDFParser
 )
 
-from config.settings import (
-    settings
+from extraction.table_extractor import (
+    TableExtractor
 )
 
+from extraction.seat_matrix_parser import (
+    SeatMatrixParser
+)
 
-# =====================================================
-# LOAD DATA
-# =====================================================
+# ==========================================
+# RAG
+# ==========================================
 
-@st.cache_data
-def load_data():
+from rag.vectorstore import (
+    vector_store
+)
+
+# ==========================================
+# UTILS
+# ==========================================
+
+from utils.logger import (
+    get_logger
+)
+
+logger = get_logger(__name__)
+
+# ==========================================
+# PAGE CONFIG
+# ==========================================
+
+st.set_page_config(
+
+    page_title=settings.PAGE_TITLE,
+
+    page_icon=settings.PAGE_ICON,
+
+    layout=settings.LAYOUT
+)
+
+# ==========================================
+# SESSION STATE
+# ==========================================
+
+if "seat_matrix_df" not in st.session_state:
+
+    st.session_state["seat_matrix_df"] = (
+        pd.DataFrame()
+    )
+
+if "data_loaded" not in st.session_state:
+
+    st.session_state["data_loaded"] = False
+
+if "vector_indexed" not in st.session_state:
+
+    st.session_state["vector_indexed"] = False
+
+
+# ==========================================
+# HELPERS
+# ==========================================
+
+def load_default_data():
+
+    processed_file = (
+        Path(
+            "data/processed/colleges.csv"
+        )
+    )
+
+    if processed_file.exists():
+
+        try:
+
+            df = pd.read_csv(
+                processed_file
+            )
+
+            st.session_state[
+                "seat_matrix_df"
+            ] = df
+
+            st.session_state[
+                "data_loaded"
+            ] = True
+
+            return True
+
+        except Exception as e:
+
+            logger.error(str(e))
+
+    return False
+
+
+def process_pdf(pdf_file):
 
     try:
 
-        return load_dataframe(
-            "data/processed/colleges.csv"
+        with tempfile.NamedTemporaryFile(
+            delete=False,
+            suffix=".pdf"
+        ) as temp_file:
+
+            temp_file.write(
+                pdf_file.read()
+            )
+
+            pdf_path = temp_file.name
+
+        extractor = (
+            TableExtractor()
         )
 
-    except Exception:
+        parser = (
+            SeatMatrixParser()
+        )
+
+        raw_df = (
+            extractor.tables_to_dataframe(
+                pdf_path
+            )
+        )
+
+        df = parser.parse(
+            raw_df
+        )
+
+        return df
+
+    except Exception as e:
+
+        logger.error(
+            f"PDF Error: {str(e)}"
+        )
+
+        st.error(
+            f"PDF Parsing Failed: {str(e)}"
+        )
 
         return pd.DataFrame()
 
 
-# =====================================================
-# MAIN
-# =====================================================
+def process_csv(uploaded_file):
 
-def main():
+    try:
 
-    initialize_theme()
+        return pd.read_csv(
+            uploaded_file
+        )
 
-    df = load_data()
+    except Exception as e:
+
+        st.error(str(e))
+
+        return pd.DataFrame()
+
+
+def process_excel(uploaded_file):
+
+    try:
+
+        return pd.read_excel(
+            uploaded_file
+        )
+
+    except Exception as e:
+
+        st.error(str(e))
+
+        return pd.DataFrame()
+
+
+def index_dataframe(df):
 
     if df.empty:
 
-        st.warning(
-            """
-            No processed college data found.
+        return
 
-            Please upload and process
-            seat matrix PDFs.
+    try:
+
+        documents = []
+
+        for _, row in df.iterrows():
+
+            doc = f"""
+
+            College Name:
+            {row.get('college_name','')}
+
+            District:
+            {row.get('district','')}
+
+            Branch:
+            {row.get('course_name','')}
+
+            Intake:
+            {row.get('total_intake',0)}
+
+            Year:
+            {row.get('year','')}
+
             """
+
+            documents.append(doc)
+
+        if documents:
+
+            vector_store.add_documents(
+                documents
+            )
+
+            st.session_state[
+                "vector_indexed"
+            ] = True
+
+    except Exception as e:
+
+        logger.error(
+            f"Vector Index Error: {str(e)}"
         )
 
-    sidebar_data = render_sidebar(df)
 
-    page = sidebar_data["page"]
+# ==========================================
+# LOAD DEFAULT DATA
+# ==========================================
 
-    filtered_df = (
-        sidebar_data["filtered_df"]
+if not st.session_state["data_loaded"]:
+
+    load_default_data()
+
+
+# ==========================================
+# UI THEME
+# ==========================================
+
+initialize_theme()
+
+# ==========================================
+# TITLE
+# ==========================================
+
+st.title(
+    "🎓 PragyanAI CET Seat Matrix Analytics"
+)
+
+st.caption(
+    """
+    Upload KCET Seat Matrix PDFs,
+    Analyze Colleges,
+    Compare Trends,
+    Explore District Analytics,
+    AI Counsellor
+    """
+)
+
+# ==========================================
+# FILE UPLOAD
+# ==========================================
+
+uploaded_file = st.file_uploader(
+
+    "Upload Seat Matrix File",
+
+    type=[
+        "pdf",
+        "csv",
+        "xlsx"
+    ]
+)
+
+if uploaded_file:
+
+    file_type = (
+        uploaded_file.name
+        .split(".")[-1]
+        .lower()
     )
 
-    # ==========================================
-    # ROUTING
-    # ==========================================
+    with st.spinner(
+        "Processing file..."
+    ):
 
-    if page == "Dashboard":
+        if file_type == "pdf":
 
-        render_dashboard(
-            filtered_df
-        )
+            df = process_pdf(
+                uploaded_file
+            )
 
-    elif page == "Analytics":
+        elif file_type == "csv":
 
-        render_analytics(
-            filtered_df
-        )
+            df = process_csv(
+                uploaded_file
+            )
 
-    elif page == "College Explorer":
+        elif file_type == "xlsx":
 
-        render_college_explorer(
-            filtered_df
-        )
+            df = process_excel(
+                uploaded_file
+            )
 
-    elif page == "Comparison":
+        else:
 
-        render_comparison_page(
-            filtered_df
-        )
+            df = pd.DataFrame()
 
-    elif page == "AI Counsellor":
+        if not df.empty:
 
-        render_chatbot(
-            filtered_df
-        )
+            st.session_state[
+                "seat_matrix_df"
+            ] = df
 
+            st.session_state[
+                "data_loaded"
+            ] = True
 
-# =====================================================
-# RUN
-# =====================================================
+            index_dataframe(df)
 
-if __name__ == "__main__":
+            st.success(
+                f"Loaded {len(df)} rows"
+            )
 
-    main()
+# ==========================================
+# DATAFRAME
+# ==========================================
+
+df = st.session_state[
+    "seat_matrix_df"
+]
+
+# ==========================================
+# NO DATA
+# ==========================================
+
+if df.empty:
+
+    st.warning(
+        """
+        Upload a KCET Seat Matrix PDF,
+        CSV or Excel file to begin.
+        """
+    )
+
+    st.stop()
+
+# ==========================================
+# SIDEBAR
+# ==========================================
+
+sidebar_data = render_sidebar(
+    df
+)
+
+page = sidebar_data["page"]
+
+filtered_df = sidebar_data[
+    "filtered_df"
+]
+
+# ==========================================
+# ROUTING
+# ==========================================
+
+if page == "Dashboard":
+
+    render_dashboard(
+        filtered_df
+    )
+
+elif page == "Analytics":
+
+    render_analytics(
+        filtered_df
+    )
+
+elif page == "College Explorer":
+
+    render_college_explorer(
+        filtered_df
+    )
+
+elif page == "Comparison":
+
+    render_comparison_page(
+        filtered_df
+    )
+
+elif page == "AI Counsellor":
+
+    render_chatbot(
+        filtered_df
+    )
+
+# ==========================================
+# FOOTER
+# ==========================================
+
+st.divider()
+
+st.caption(
+
+    f"""
+    Colleges:
+    {filtered_df['college_name'].nunique()
+    if 'college_name' in filtered_df.columns else 0}
+
+    |
+    Seats:
+    {filtered_df['total_intake'].sum()
+    if 'total_intake' in filtered_df.columns else 0:,}
+
+    |
+    Rows:
+    {len(filtered_df):,}
+    """
+)
+
