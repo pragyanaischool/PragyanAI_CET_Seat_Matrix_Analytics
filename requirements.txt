@@ -88,3 +88,5 @@ faiss-cpu
 sentence-transformers
 langchain
 langchain-community
+torch
+torchvision
