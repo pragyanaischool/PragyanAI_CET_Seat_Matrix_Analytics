@@ -1,7 +1,7 @@
 """
 rag/retriever.py
 
-Retriever Layer
+FAISS Retriever Layer
 """
 
 from rag.vectorstore import (
@@ -10,12 +10,19 @@ from rag.vectorstore import (
 
 
 class CollegeRetriever:
+    """
+    Retriever wrapper around FAISS Vector Store
+    """
 
     def __init__(self):
 
-        self.store = (
+        self.vector_store = (
             vector_store
         )
+
+    # =====================================
+    # RETRIEVE DOCUMENTS
+    # =====================================
 
     def retrieve(
         self,
@@ -23,14 +30,39 @@ class CollegeRetriever:
         top_k=5
     ):
 
-        results = (
-            self.store.similarity_search(
-                query,
-                top_k
+        return (
+
+            self.vector_store
+            .similarity_search(
+                query=query,
+                top_k=top_k
             )
+
         )
 
-        return results
+    # =====================================
+    # RETRIEVE WITH SCORES
+    # =====================================
+
+    def retrieve_with_scores(
+        self,
+        query,
+        top_k=5
+    ):
+
+        return (
+
+            self.vector_store
+            .similarity_search_with_scores(
+                query=query,
+                top_k=top_k
+            )
+
+        )
+
+    # =====================================
+    # GET CONTEXT
+    # =====================================
 
     def get_context(
         self,
@@ -38,21 +70,123 @@ class CollegeRetriever:
         top_k=5
     ):
 
-        results = self.retrieve(
-            query,
-            top_k
+        docs = self.retrieve(
+            query=query,
+            top_k=top_k
         )
 
-        docs = results.get(
-            "documents",
-            [[]]
-        )[0]
+        if not docs:
+
+            return ""
 
         return "\n\n".join(
             docs
         )
 
+    # =====================================
+    # GET CONTEXT WITH SCORES
+    # =====================================
+
+    def get_context_with_scores(
+        self,
+        query,
+        top_k=5
+    ):
+
+        results = (
+            self.retrieve_with_scores(
+                query=query,
+                top_k=top_k
+            )
+        )
+
+        if not results:
+
+            return []
+
+        return results
+
+    # =====================================
+    # DEBUG SEARCH
+    # =====================================
+
+    def debug_search(
+        self,
+        query,
+        top_k=5
+    ):
+
+        results = (
+            self.retrieve_with_scores(
+                query=query,
+                top_k=top_k
+            )
+        )
+
+        print("\n")
+        print("=" * 60)
+        print("QUERY")
+        print("=" * 60)
+        print(query)
+
+        print("\n")
+        print("=" * 60)
+        print("RETRIEVED DOCUMENTS")
+        print("=" * 60)
+
+        for idx, item in enumerate(
+            results,
+            start=1
+        ):
+
+            print(
+                f"\nResult {idx}"
+            )
+
+            print(
+                f"Score: {item['score']}"
+            )
+
+            print(
+                item["document"][:500]
+            )
+
+        return results
+
+    # =====================================
+    # DOCUMENT COUNT
+    # =====================================
+
+    def document_count(
+        self
+    ):
+
+        return (
+            self.vector_store
+            .count()
+        )
+
+    # =====================================
+    # STORE INFO
+    # =====================================
+
+    def info(
+        self
+    ):
+
+        return (
+
+            self.vector_store
+            .info()
+
+        )
+
+
+# ==========================================
+# SINGLETON INSTANCE
+# ==========================================
 
 retriever = (
     CollegeRetriever()
 )
+
