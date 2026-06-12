@@ -415,3 +415,48 @@ def yearly_growth_chart(df):
         title="Year Wise Seat Growth"
     )
     
+# =====================================================
+# TOP BRANCHES CHART
+# =====================================================
+
+def top_branches_chart(
+    df,
+    top_n=15
+):
+
+    if (
+        df.empty or
+        "course_name" not in df.columns
+    ):
+        return None
+
+    branch_df = (
+
+        df.groupby(
+            "course_name"
+        )["total_intake"]
+
+        .sum()
+
+        .reset_index()
+
+        .sort_values(
+            "total_intake",
+            ascending=False
+        )
+
+        .head(top_n)
+    )
+
+    fig = px.bar(
+
+        branch_df,
+
+        x="course_name",
+
+        y="total_intake",
+
+        title=f"Top {top_n} Branches by Intake"
+    )
+
+    return fig
