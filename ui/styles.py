@@ -1,65 +1,42 @@
 """
 ui/styles.py
-
-Minimal Professional Theme
 """
 
 import streamlit as st
 
+
 def initialize_theme():
-"""
-Apply minimal styling.
-Streamlit theme controls colors.
-"""
-
-```
-st.markdown(
     """
-    <style>
+    Minimal styling for the app.
+    """
 
-    /* Main Container */
+    st.markdown(
+        """
+        <style>
 
-    .block-container {
-        max-width: 1400px;
-        padding-top: 1rem;
-        padding-bottom: 1rem;
-    }
+        .block-container {
+            max-width: 1400px;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
 
-    /* Metric Cards */
+        div[data-testid="metric-container"] {
+            border-radius: 12px;
+            padding: 12px;
+            border: 1px solid rgba(128, 128, 128, 0.15);
+        }
 
-    div[data-testid="metric-container"] {
-        border-radius: 12px;
-        padding: 12px;
-        border: 1px solid rgba(128,128,128,0.15);
-    }
+        .stButton > button {
+            border-radius: 8px;
+        }
 
-    /* Buttons */
+        footer {
+            visibility: hidden;
+        }
 
-    .stButton > button {
-        border-radius: 8px;
-    }
-
-    /* Dataframes */
-
-    .stDataFrame {
-        border-radius: 10px;
-    }
-
-    /* Chat Messages */
-
-    .stChatMessage {
-        border-radius: 10px;
-    }
-
-    /* Hide Footer */
-
-    footer {
-        visibility: hidden;
-    }
-
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-```
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+    
 
