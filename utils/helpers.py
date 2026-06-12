@@ -72,3 +72,36 @@ def normalize_column_names(df):
     ]
 
     return df
+def normalize_columns(df):
+
+    mapping = {
+
+        "College Name": "college_name",
+        "College": "college_name",
+
+        "District": "district",
+
+        "Branch": "course_name",
+        "Course Name": "course_name",
+
+        "Total Intake": "total_intake",
+        "Intake": "total_intake",
+
+        "Year": "year"
+    }
+
+    df = df.rename(
+        columns=mapping
+    )
+
+    df.columns = [
+
+        str(c)
+        .lower()
+        .strip()
+        .replace(" ", "_")
+
+        for c in df.columns
+    ]
+
+    return df
