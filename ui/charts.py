@@ -1,6 +1,4 @@
 # ui/charts.py
-
-```python
 """
 ui/charts.py
 
@@ -491,4 +489,3 @@ def dashboard_summary_charts(df):
 
     with c4:
         top_colleges_chart(df, 10)
-```
